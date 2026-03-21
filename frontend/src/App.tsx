@@ -3,6 +3,7 @@ import CalendarPage from "./pages/CalendarPage";
 import DayPage from "./pages/DayPage";
 import { getDateKey } from "./utils/constants";
 import type { ActiveDate, TasksState, Task } from "./types";
+import AuthPage from "./pages/AuthPage";
 
 const getInitialMocks = (): TasksState => {
   const t = new Date();
@@ -37,10 +38,10 @@ const getInitialMocks = (): TasksState => {
 };
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [today] = useState<Date>(new Date());
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [activeDate, setActiveDate] = useState<ActiveDate | null>(null);
-
   const [tasks, setTasks] = useState<TasksState>(getInitialMocks());
 
   const handleOpenDay = (year: number, month: number, day: number) => {
@@ -72,7 +73,9 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {!activeDate ? (
+      {!isAuthenticated ? (
+        <AuthPage onLogin={() => setIsAuthenticated(true)} />
+      ) : !activeDate ? (
         <CalendarPage
           today={today}
           viewYear={viewDate.getFullYear()}

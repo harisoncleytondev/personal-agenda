@@ -1,4 +1,4 @@
-@import url("[https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap](https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap)");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Outfit:wght@300;400;500;600&display=swap");
 
 *,
 *::before,
@@ -920,4 +920,42 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 #page-day .scroll-content {
   overflow-y: auto;
   flex: 1;
+}
+
+.auth-page {
+  justify-content: center;
+}
+
+.auth-header {
+  padding: 80px 24px 20px;
+  text-align: left;
+}
+
+.auth-header .greeting {
+  font-size: 52px;
+}
+
+.auth-form {
+  padding-top: 20px;
+  flex: none;
+}
+
+.auth-btn {
+  margin-top: 30px;
+}
+
+.auth-toggle {
+  margin-top: 12px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0.5px;
+  font-size: 13px;
+}
+
+.auth-toggle:hover {
+  background: transparent;
+  color: var(--gold);
+  transform: none;
 }
