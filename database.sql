@@ -7,7 +7,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE appointments (
-    id VARCHAR(50) PRIMARY KEY, 
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     task_date DATE NOT NULL, 
     name VARCHAR(80) NOT NULL, 
@@ -20,6 +20,8 @@ CREATE TABLE appointments (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
+
+-- DROP TABLE appointments;
 
 CREATE INDEX idx_tasks_task_date ON tasks(task_date);
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
