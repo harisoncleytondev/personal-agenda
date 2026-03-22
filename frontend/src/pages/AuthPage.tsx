@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { GET_BASE_URL } from "../utils/constants";
 
 interface AuthPageProps {
   onLogin: () => void;
@@ -25,7 +26,7 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
     setLoading(true);
     try {
       if (isLogin) {
-        const res = await fetch(`/auth/login`, {
+        const res = await fetch(`${GET_BASE_URL}/auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password }),
@@ -38,7 +39,7 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
           setTimeout(() => setError(false), 400);
         }
       } else {
-        const res = await fetch(`/auth/register`, {
+        const res = await fetch(`${GET_BASE_URL}/auth/register`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import CalendarPage from "./pages/CalendarPage";
 import DayPage from "./pages/DayPage";
-import { getDateKey } from "./utils/constants";
+import { GET_BASE_URL, getDateKey } from "./utils/constants";
 import type { ActiveDate, TasksState, Task } from "./types";
 import AuthPage from "./pages/AuthPage";
 
@@ -18,7 +18,7 @@ export default function App() {
       let res = await fetch(url, options);
 
       if (res.status === 401) {
-        const refreshRes = await fetch("/auth/refresh", {
+        const refreshRes = await fetch(`${GET_BASE_URL}/auth/refresh`, {
           credentials: "include",
         });
 
@@ -36,7 +36,7 @@ export default function App() {
 
   const checkSession = useCallback(async () => {
     try {
-      const res = await fetchWithAuth("/logged/appointment/", {
+      const res = await fetchWithAuth(`${GET_BASE_URL}/logged/appointment/`, {
         credentials: "include",
       });
       if (res.ok) {
@@ -54,9 +54,12 @@ export default function App() {
 
   const loadTasks = useCallback(async () => {
     try {
-      const res = await fetchWithAuth(`/logged/appointment/getall`, {
-        credentials: "include",
-      });
+      const res = await fetchWithAuth(
+        `${GET_BASE_URL}/logged/appointment/getall`,
+        {
+          credentials: "include",
+        },
+      );
       if (res.ok) {
         const data = await res.json();
         const newTasks: TasksState = {};
@@ -108,12 +111,15 @@ export default function App() {
       alert_dates: taskObj.alertDates || [],
     };
     try {
-      const res = await fetchWithAuth(`/logged/appointment/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        credentials: "include",
-      });
+      const res = await fetchWithAuth(
+        `${GET_BASE_URL}/logged/appointment/create`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "include",
+        },
+      );
       if (res.ok) loadTasks();
     } catch (err) {}
   };
@@ -131,7 +137,7 @@ export default function App() {
     };
     try {
       const res = await fetchWithAuth(
-        `/logged/appointment/update/${taskObj.id}`,
+        `${GET_BASE_URL}/logged/appointment/update/${taskObj.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -149,10 +155,13 @@ export default function App() {
       [dateKey]: prev[dateKey].filter((t) => t.id !== taskId),
     }));
     try {
-      await fetchWithAuth(`/logged/appointment/delete/${taskId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      await fetchWithAuth(
+        `${GET_BASE_URL}/logged/appointment/delete/${taskId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        },
+      );
     } catch (err) {}
   };
 

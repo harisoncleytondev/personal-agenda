@@ -47,3 +47,5 @@ export const WDS_S: string[] = [
 
 export const getDateKey = (y: number, m: number, d: number): string =>
   `${y}-${m + 1}-${d}`;
+
+export const GET_BASE_URL = import.meta.env.VITE_API_BASE_URL;
