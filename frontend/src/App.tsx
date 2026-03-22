@@ -1,74 +1,140 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import CalendarPage from "./pages/CalendarPage";
 import DayPage from "./pages/DayPage";
 import { getDateKey } from "./utils/constants";
 import type { ActiveDate, TasksState, Task } from "./types";
 import AuthPage from "./pages/AuthPage";
 
-const getInitialMocks = (): TasksState => {
-  const t = new Date();
-  const todayKey = getDateKey(t.getFullYear(), t.getMonth(), t.getDate());
-
-  const amanhã = new Date(t);
-  amanhã.setDate(amanhã.getDate() + 1);
-  const amanhaStr = `${amanhã.getFullYear()}-${String(amanhã.getMonth() + 1).padStart(2, "0")}-${String(amanhã.getDate()).padStart(2, "0")}`;
-
-  const daquiA3Dias = new Date(t);
-  daquiA3Dias.setDate(daquiA3Dias.getDate() + 3);
-  const tresDiasStr = `${daquiA3Dias.getFullYear()}-${String(daquiA3Dias.getMonth() + 1).padStart(2, "0")}-${String(daquiA3Dias.getDate()).padStart(2, "0")}`;
-
-  return {
-    [todayKey]: [
-      {
-        id: "mock-1",
-        name: "Reunião de Alinhamento",
-        ts: "10:00",
-        te: "11:00",
-        alertType: "1_day_before",
-      },
-      {
-        id: "mock-2",
-        name: "Estudar React",
-        desc: "Fazer o módulo de hooks e componentes",
-        alertType: "custom_date",
-        alertDates: [amanhaStr, tresDiasStr],
-      },
-    ],
-  };
-};
-
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [today] = useState<Date>(new Date());
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [activeDate, setActiveDate] = useState<ActiveDate | null>(null);
-  const [tasks, setTasks] = useState<TasksState>(getInitialMocks());
+  const [tasks, setTasks] = useState<TasksState>({});
+
+  const fetchWithAuth = useCallback(
+    async (url: string, options: RequestInit = {}) => {
+      let res = await fetch(url, options);
+
+      if (res.status === 401) {
+        const refreshRes = await fetch("/auth/refresh", {
+          credentials: "include",
+        });
+
+        if (refreshRes.ok) {
+          res = await fetch(url, options);
+        } else {
+          setIsAuthenticated(false);
+        }
+      }
+
+      return res;
+    },
+    [],
+  );
+
+  const loadTasks = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth(`/logged/appointment/getall`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const newTasks: TasksState = {};
+        if (Array.isArray(data)) {
+          data.forEach((ap: any) => {
+            const dateObj = new Date(ap.task_date);
+            const key = getDateKey(
+              dateObj.getUTCFullYear(),
+              dateObj.getUTCMonth(),
+              dateObj.getUTCDate(),
+            );
+            if (!newTasks[key]) newTasks[key] = [];
+            const alertDates = ap.alert_dates
+              ? ap.alert_dates.map((d: string) => d.split("T")[0])
+              : undefined;
+            newTasks[key].push({
+              id: ap.id,
+              name: ap.name,
+              desc: ap.description || "",
+              ts: ap.time_start ? ap.time_start.substring(0, 5) : "",
+              te: ap.time_end ? ap.time_end.substring(0, 5) : "",
+              alertType: ap.alert_type,
+              alertDates: alertDates,
+            });
+          });
+        }
+        setTasks(newTasks);
+      }
+    } catch (err) {}
+  }, [fetchWithAuth]);
+
+  useEffect(() => {
+    if (isAuthenticated) loadTasks();
+  }, [isAuthenticated, loadTasks]);
 
   const handleOpenDay = (year: number, month: number, day: number) => {
     setActiveDate({ year, month, day });
   };
 
-  const handleAddTask = (dateObj: ActiveDate, taskObj: Task) => {
-    const key = getDateKey(dateObj.year, dateObj.month, dateObj.day);
-    setTasks((prev) => ({
-      ...prev,
-      [key]: [...(prev[key] || []), taskObj],
-    }));
+  const handleAddTask = async (dateObj: ActiveDate, taskObj: Task) => {
+    const taskDateStr = `${dateObj.year}-${String(dateObj.month + 1).padStart(2, "0")}-${String(dateObj.day).padStart(2, "0")}`;
+    const payload = {
+      task_date: taskDateStr,
+      name: taskObj.name,
+      description: taskObj.desc || "",
+      time_start: taskObj.ts || "",
+      time_end: taskObj.te || "",
+      alert_type: taskObj.alertType || "none",
+      alert_dates: taskObj.alertDates || [],
+    };
+    try {
+      const res = await fetchWithAuth(`/logged/appointment/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        credentials: "include",
+      });
+      if (res.ok) loadTasks();
+    } catch (err) {}
   };
 
-  const handleUpdateTask = (dateObj: ActiveDate, updatedTask: Task) => {
-    const key = getDateKey(dateObj.year, dateObj.month, dateObj.day);
-    setTasks((prev) => ({
-      ...prev,
-      [key]: prev[key].map((t) => (t.id === updatedTask.id ? updatedTask : t)),
-    }));
+  const handleUpdateTask = async (dateObj: ActiveDate, taskObj: Task) => {
+    const taskDateStr = `${dateObj.year}-${String(dateObj.month + 1).padStart(2, "0")}-${String(dateObj.day).padStart(2, "0")}`;
+    const payload = {
+      task_date: taskDateStr,
+      name: taskObj.name,
+      description: taskObj.desc || "",
+      time_start: taskObj.ts || "",
+      time_end: taskObj.te || "",
+      alert_type: taskObj.alertType || "none",
+      alert_dates: taskObj.alertDates || [],
+    };
+    try {
+      const res = await fetchWithAuth(
+        `/logged/appointment/update/${taskObj.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "include",
+        },
+      );
+      if (res.ok) loadTasks();
+    } catch (err) {}
   };
 
-  const handleDeleteTask = (dateKey: string, taskId: string) => {
+  const handleDeleteTask = async (dateKey: string, taskId: string) => {
     setTasks((prev) => ({
       ...prev,
       [dateKey]: prev[dateKey].filter((t) => t.id !== taskId),
     }));
+    try {
+      await fetchWithAuth(`/logged/appointment/delete/${taskId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+    } catch (err) {}
   };
 
   return (

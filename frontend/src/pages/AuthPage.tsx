@@ -8,19 +8,61 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordCo, setPasswordCo] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password || (!isLogin && !name)) {
+    if (!email || !password || (!isLogin && (!name || !passwordCo))) {
       setError(true);
       setTimeout(() => setError(false), 400);
       return;
     }
 
-    onLogin();
+    setLoading(true);
+    try {
+      if (isLogin) {
+        const res = await fetch(`/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+          credentials: "include",
+        });
+        if (res.ok) {
+          onLogin();
+        } else {
+          setError(true);
+          setTimeout(() => setError(false), 400);
+        }
+      } else {
+        const res = await fetch(`/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            password_confirm: passwordCo,
+          }),
+        });
+        if (res.ok) {
+          setIsLogin(true);
+          setPassword("");
+          setPasswordCo("");
+        } else {
+          setError(true);
+          setTimeout(() => setError(false), 400);
+        }
+      }
+    } catch (err) {
+      setError(true);
+      setTimeout(() => setError(false), 400);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,8 +111,25 @@ export default function AuthPage({ onLogin }: AuthPageProps) {
           />
         </div>
 
-        <button type="submit" className="btn-primary-custom auth-btn">
-          {isLogin ? "Entrar" : "Cadastrar"}
+        {!isLogin && (
+          <div className="bs-field">
+            <label className="bs-label">Confirmar Senha</label>
+            <input
+              type="password"
+              className={`bs-input ${error && !passwordCo ? "err" : ""}`}
+              value={passwordCo}
+              onChange={(e) => setPasswordCo(e.target.value)}
+              placeholder="••••••••"
+            />
+          </div>
+        )}
+
+        <button
+          type="submit"
+          className="btn-primary-custom auth-btn"
+          disabled={loading}
+        >
+          {loading ? "Carregando..." : isLogin ? "Entrar" : "Cadastrar"}
         </button>
 
         <button
