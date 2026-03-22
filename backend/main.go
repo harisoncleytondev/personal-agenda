@@ -17,7 +17,7 @@ func main() {
 
 	r := api.SetupRouter()
 
-	if err := r.Run(":5000"); err != nil {
+	if err := r.Run(":" + config.GetPort()); err != nil {
 		log.Fatalln("Falhou ao iniciar o servidor.")
 	} 
 
