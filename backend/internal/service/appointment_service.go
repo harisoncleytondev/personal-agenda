@@ -180,3 +180,50 @@ func (s *AppointmentService) GetByID(ctx context.Context, id string, userID stri
 
 	return appointment, nil
 }
+
+func (s *AppointmentService) ProcessDailyRoutines(ctx context.Context) error {
+	hoje := time.Now()
+
+	alerts, err := s.appointmentRepo.GetAppointmentsToAlert(ctx, hoje)
+	if err != nil {
+		return err
+	}
+
+	emailSvc := NewEmailService()
+
+	for _, alert := range alerts {
+		hora := "O dia todo"
+		if alert.TimeStart != nil {
+			hora = *alert.TimeStart
+		}
+
+		desc := "Sem descrição adicional."
+		if alert.Description != nil && *alert.Description != "" {
+			desc = *alert.Description
+		}
+
+		dataFormatada := alert.TaskDate.Format("02/01/2006")
+
+		fmt.Printf("[CRON] Enviando alerta de '%s' para %s...\n", alert.TaskName, alert.UserEmail)
+
+		err := emailSvc.SendAppointmentAlert(
+			alert.UserEmail,
+			alert.UserName,
+			alert.TaskName,
+			dataFormatada,
+			hora,
+			desc,
+		)
+
+		if err != nil {
+			fmt.Printf("[CRON] ERRO ao enviar e-mail para %s: %v\n", alert.UserEmail, err)
+		}
+	}
+
+	err = s.appointmentRepo.DeletePastAppointments(ctx, hoje)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

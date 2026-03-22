@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/harisoncleytondev/personal-agenda/internal/model"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -103,5 +104,49 @@ func (r *AppointmentRepository) DeleteAppointment(ctx context.Context, id string
 	`
 
 	_, err := r.db.Exec(ctx, query, id)
+	return err
+}
+
+func (r *AppointmentRepository) GetAppointmentsToAlert(ctx context.Context, today time.Time) ([]model.AlertInfo, error) {
+	query := `
+		SELECT a.name, a.description, a.time_start, a.task_date, u.email, u.name
+		FROM appointments a
+		INNER JOIN users u ON a.user_id = u.id
+		WHERE 
+			(a.task_date = $1::date)
+			OR 
+			(a.alert_type = '1_day_before' AND a.task_date = $1::date + INTERVAL '1 day')
+			OR 
+			(a.alert_type = 'custom_date' AND $1::date = ANY(a.alert_dates))
+	`
+	
+	rows, err := r.db.Query(ctx, query, today.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var alerts []model.AlertInfo
+	for rows.Next() {
+		var alert model.AlertInfo
+		err := rows.Scan(
+			&alert.TaskName, 
+			&alert.Description, 
+			&alert.TimeStart, 
+			&alert.TaskDate, 
+			&alert.UserEmail, 
+			&alert.UserName,
+		)
+		if err != nil {
+			return nil, err
+		}
+		alerts = append(alerts, alert)
+	}
+	return alerts, nil
+}
+
+func (r *AppointmentRepository) DeletePastAppointments(ctx context.Context, today time.Time) error {
+	query := `DELETE FROM appointments WHERE task_date < $1::date`
+	_, err := r.db.Exec(ctx, query, today.Format("2006-01-02"))
 	return err
 }

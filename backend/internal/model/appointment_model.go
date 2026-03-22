@@ -27,3 +27,12 @@ type AppointmentCreate struct {
 	AlertType   string      `db:"alert_type"`
 	AlertDates  []time.Time `db:"alert_dates"`
 }
+
+type AlertInfo struct {
+	TaskName    string
+	Description *string
+	TimeStart   *string
+	TaskDate    time.Time
+	UserEmail   string
+	UserName    string
+}
