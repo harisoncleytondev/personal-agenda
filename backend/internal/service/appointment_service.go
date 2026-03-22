@@ -66,12 +66,7 @@ func (s *AppointmentService) CreateAppointment(ctx context.Context, userID strin
 		AlertDates:  alertDates,
 	}
 
-	err = s.appointmentRepo.CreateAppointment(ctx, newAppointment)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.appointmentRepo.CreateAppointment(ctx, newAppointment)
 }
 
 func (s *AppointmentService) UpdateAppointment(ctx context.Context, id string, userID string, req dto.UpdateAppointmentRequest) error {
@@ -133,12 +128,7 @@ func (s *AppointmentService) UpdateAppointment(ctx context.Context, id string, u
 		AlertDates:  alertDates,
 	}
 
-	err = s.appointmentRepo.UpdateAppointment(ctx, id, updatedAppointment)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.appointmentRepo.UpdateAppointment(ctx, id, updatedAppointment)
 }
 
 func (s *AppointmentService) DeleteAppointment(ctx context.Context, id string, userID string) error {
@@ -151,21 +141,11 @@ func (s *AppointmentService) DeleteAppointment(ctx context.Context, id string, u
 		return errors.New("Acesso negado.")
 	}
 
-	err = s.appointmentRepo.DeleteAppointment(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.appointmentRepo.DeleteAppointment(ctx, id)
 }
 
 func (s *AppointmentService) GetAllByUserID(ctx context.Context, userID string) ([]model.Appointment, error) {
-	appointments, err := s.appointmentRepo.GetAllByUserID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return appointments, nil
+	return s.appointmentRepo.GetAllByUserID(ctx, userID)
 }
 
 func (s *AppointmentService) GetByID(ctx context.Context, id string, userID string) (*model.Appointment, error) {
@@ -190,40 +170,37 @@ func (s *AppointmentService) ProcessDailyRoutines(ctx context.Context) error {
 	}
 
 	emailSvc := NewEmailService()
+	userAlerts := make(map[string][]model.AlertInfo)
+	userNames := make(map[string]string)
 
 	for _, alert := range alerts {
-		hora := "O dia todo"
-		if alert.TimeStart != nil {
-			hora = *alert.TimeStart
+		userAlerts[alert.UserEmail] = append(userAlerts[alert.UserEmail], alert)
+		userNames[alert.UserEmail] = alert.UserName
+	}
+
+	for email, alertList := range userAlerts {
+		var todayTasks []model.AlertInfo
+		var reminderTasks []model.AlertInfo
+
+		for _, alert := range alertList {
+			if alert.TaskDate.Format("2006-01-02") == hoje.Format("2006-01-02") {
+				todayTasks = append(todayTasks, alert)
+			} else {
+				reminderTasks = append(reminderTasks, alert)
+			}
 		}
 
-		desc := "Sem descrição adicional."
-		if alert.Description != nil && *alert.Description != "" {
-			desc = *alert.Description
-		}
-
-		dataFormatada := alert.TaskDate.Format("02/01/2006")
-
-		fmt.Printf("[CRON] Enviando alerta de '%s' para %s...\n", alert.TaskName, alert.UserEmail)
-
-		err := emailSvc.SendAppointmentAlert(
-			alert.UserEmail,
-			alert.UserName,
-			alert.TaskName,
-			dataFormatada,
-			hora,
-			desc,
+		err := emailSvc.SendDailySummaryAlert(
+			email,
+			userNames[email],
+			todayTasks,
+			reminderTasks,
 		)
 
 		if err != nil {
-			fmt.Printf("[CRON] ERRO ao enviar e-mail para %s: %v\n", alert.UserEmail, err)
+			fmt.Printf("ERRO ao enviar e-mail para %s: %v\n", email, err)
 		}
 	}
 
-	err = s.appointmentRepo.DeletePastAppointments(ctx, hoje)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return s.appointmentRepo.DeletePastAppointments(ctx, hoje)
 }
