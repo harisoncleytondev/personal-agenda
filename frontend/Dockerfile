@@ -1,13 +1,16 @@
-FROM node:20-alpine
+ARG NODE_VERSION=24.14.0-alpine
+FROM node:${NODE_VERSION} AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY . .
 RUN npm run build
+FROM nginx:stable-alpine AS runner
 
-EXPOSE 5001
+COPY --from=builder /app/dist /usr/share/nginx/html
+EXPOSE 80
 
-CMD ["npm", "run", "preview", "--", "--port", "5001", "--host"]
+CMD ["nginx", "-g", "daemon off;"]
