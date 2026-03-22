@@ -6,7 +6,7 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE tasks (
+CREATE TABLE appointments (
     id VARCHAR(50) PRIMARY KEY, 
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     task_date DATE NOT NULL, 
