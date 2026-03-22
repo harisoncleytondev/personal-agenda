@@ -19,6 +19,20 @@ func NewAppointmentService(appointmentRepo *repository.AppointmentRepository) *A
 	return &AppointmentService{appointmentRepo: appointmentRepo}
 }
 
+func nullIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func cleanPtr(s *string) *string {
+	if s != nil && *s == "" {
+		return nil
+	}
+	return s
+}
+
 func (s *AppointmentService) CreateAppointment(ctx context.Context, userID string, req dto.CreateAppointmentRequest) error {
 	taskDate, err := time.Parse("2006-01-02", req.TaskDate)
 	if err != nil {
@@ -26,7 +40,6 @@ func (s *AppointmentService) CreateAppointment(ctx context.Context, userID strin
 	}
 
 	var alertDates []time.Time
-
 	now := time.Now()
 	hoje := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
@@ -39,7 +52,6 @@ func (s *AppointmentService) CreateAppointment(ctx context.Context, userID strin
 		if parsedDate.Before(hoje) || parsedDate.Equal(hoje) {
 			return fmt.Errorf("A data de alerta '%s' não pode ser igual ou anterior a hoje.", dateStr)
 		}
-
 		alertDates = append(alertDates, parsedDate)
 	}
 
@@ -47,9 +59,9 @@ func (s *AppointmentService) CreateAppointment(ctx context.Context, userID strin
 		UserID:      userID,
 		TaskDate:    taskDate,
 		Name:        req.Name,
-		Description: req.Description,
-		TimeStart:   req.TimeStart,
-		TimeEnd:     req.TimeEnd,
+		Description: nullIfEmpty(req.Description),
+		TimeStart:   cleanPtr(req.TimeStart),
+		TimeEnd:     cleanPtr(req.TimeEnd),
 		AlertType:   req.AlertType,
 		AlertDates:  alertDates,
 	}
@@ -96,7 +108,6 @@ func (s *AppointmentService) UpdateAppointment(ctx context.Context, id string, u
 			if parsedDate.Before(hoje) || parsedDate.Equal(hoje) {
 				return fmt.Errorf("A data de alerta '%s' não pode ser igual ou anterior a hoje.", dateStr)
 			}
-
 			alertDates = append(alertDates, parsedDate)
 		}
 	}
@@ -104,21 +115,6 @@ func (s *AppointmentService) UpdateAppointment(ctx context.Context, id string, u
 	name := existingApp.Name
 	if req.Name != "" {
 		name = req.Name
-	}
-
-	desc := existingApp.Description
-	if req.Description != "" {
-		desc = req.Description
-	}
-
-	timeStart := existingApp.TimeStart
-	if req.TimeStart != "" {
-		timeStart = req.TimeStart
-	}
-
-	timeEnd := existingApp.TimeEnd
-	if req.TimeEnd != "" {
-		timeEnd = req.TimeEnd
 	}
 
 	alertType := existingApp.AlertType
@@ -130,9 +126,9 @@ func (s *AppointmentService) UpdateAppointment(ctx context.Context, id string, u
 		UserID:      userID,
 		TaskDate:    taskDate,
 		Name:        name,
-		Description: desc,
-		TimeStart:   timeStart,
-		TimeEnd:     timeEnd,
+		Description: nullIfEmpty(req.Description),
+		TimeStart:   cleanPtr(req.TimeStart),
+		TimeEnd:     cleanPtr(req.TimeEnd),
 		AlertType:   alertType,
 		AlertDates:  alertDates,
 	}

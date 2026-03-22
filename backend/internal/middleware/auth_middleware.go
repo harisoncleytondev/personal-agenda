@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"errors"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +13,6 @@ import (
 func AuthMiddleware(userRepo *repository.UserRepository, tokenTypeExpected string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tokenStr, err := c.Cookie("access_token")
-		log.Println(c.Request.Cookies())
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Token não fornecido"})
 			c.Abort()
