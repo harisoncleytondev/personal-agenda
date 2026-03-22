@@ -13,17 +13,26 @@ func SetupRouter() *gin.Engine {
 	r := gin.Default()
 
 	userRepo := repository.NewUserRepository(config.DB)
+
 	authService := service.NewAuthService(userRepo)
 	authHandler := routes.NewAuthHandle(authService)
+
+	appointmentRepo := repository.NewAppointmentRepository(config.DB)
+	appointmentService := service.NewAppointmentService(appointmentRepo)
+	appointmentHandler := routes.NewAppointmentHandle(appointmentService)
 
 	r.POST("/auth/login", authHandler.Login)
 	r.POST("/auth/register", authHandler.Register)
 	r.GET("/auth/refresh", authHandler.Refresh)
 
-	authGroup := r.Group("/logged")
+	authGroup := r.Group("/logged/appointment")
 	authGroup.Use(middleware.AuthMiddleware(userRepo, "access"))
 	{
-		authGroup.GET("/teste", routes.Test)
+		authGroup.POST("/create", appointmentHandler.Create)
+		authGroup.GET("/getall", appointmentHandler.GetAll)
+		authGroup.GET("/get/:id", appointmentHandler.GetByID)
+		authGroup.PUT("/update/:id", appointmentHandler.Update)
+		authGroup.DELETE("/delete/:id", appointmentHandler.Delete)
 	}
 
 	return r
