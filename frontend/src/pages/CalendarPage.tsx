@@ -92,11 +92,7 @@ export default function CalendarPage({
   return (
     <div id="page-cal" className="page active">
       <div className="cal-topbar">
-        <div className="greeting">
-          Olá,
-          <br />
-          <em>Harison.</em>
-        </div>
+        <div className="greeting">Olá</div>
         <div className="today-badge">{todayBadgeText}</div>
       </div>
 
