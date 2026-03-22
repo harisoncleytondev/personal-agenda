@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/harisoncleytondev/personal-agenda/config"
 	"github.com/harisoncleytondev/personal-agenda/internal/api/routes"
+	"github.com/harisoncleytondev/personal-agenda/internal/middleware"
 	"github.com/harisoncleytondev/personal-agenda/internal/repository"
 	"github.com/harisoncleytondev/personal-agenda/internal/service"
 )
@@ -18,6 +19,12 @@ func SetupRouter() *gin.Engine {
 	r.POST("/auth/login", authHandler.Login)
 	r.POST("/auth/register", authHandler.Register)
 	r.GET("/auth/refresh", authHandler.Refresh)
+
+	authGroup := r.Group("/logged")
+	authGroup.Use(middleware.AuthMiddleware(userRepo, "access"))
+	{
+		authGroup.GET("/teste", routes.Test)
+	}
 
 	return r
 }

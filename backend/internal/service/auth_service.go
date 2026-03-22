@@ -100,7 +100,7 @@ func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (ac
 		if t.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("Método de assinatura inválido")
 		}
-		return config.GetJWTSecret(), nil
+		return []byte(config.GetJWTSecret()), nil
 	})
 
 	if err != nil || !token.Valid {
