@@ -7,6 +7,7 @@ import AuthPage from "./pages/AuthPage";
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [today] = useState<Date>(new Date());
   const [viewDate, setViewDate] = useState<Date>(new Date());
   const [activeDate, setActiveDate] = useState<ActiveDate | null>(null);
@@ -32,6 +33,24 @@ export default function App() {
     },
     [],
   );
+
+  const checkSession = useCallback(async () => {
+    try {
+      const res = await fetchWithAuth("/logged/appointment/", {
+        credentials: "include",
+      });
+      if (res.ok) {
+        setIsAuthenticated(true);
+      }
+    } catch (err) {
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchWithAuth]);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   const loadTasks = useCallback(async () => {
     try {
@@ -136,6 +155,10 @@ export default function App() {
       });
     } catch (err) {}
   };
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <div className="app-shell">

@@ -42,6 +42,10 @@ func SetupRouter() *gin.Engine {
 	authGroup := r.Group("/logged/appointment")
 	authGroup.Use(middleware.AuthMiddleware(userRepo, "access"))
 	{
+		authGroup.GET("/", func(c *gin.Context) {
+			user, _ := c.Get("user")
+			c.JSON(http.StatusOK, gin.H{"user": user})
+		})
 		authGroup.POST("/create", appointmentHandler.Create)
 		authGroup.GET("/getall", appointmentHandler.GetAll)
 		authGroup.GET("/get/:id", appointmentHandler.GetByID)
