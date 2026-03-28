@@ -48,6 +48,16 @@ export default function CalendarPage({
     return { daysWithTasks, totalTasks, todayTasksCount };
   }, [tasks, viewYear, viewMonth, today]);
 
+  const isPastDay = (year: number, month: number, day: number): boolean => {
+    const today = new Date();
+    const current = new Date(year, month, day);
+
+    today.setHours(0, 0, 0, 0);
+    current.setHours(0, 0, 0, 0);
+
+    return current < today;
+  };
+
   const calendarDays = useMemo(() => {
     const firstDay = new Date(viewYear, viewMonth, 1).getDay();
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
@@ -157,8 +167,16 @@ export default function CalendarPage({
             return (
               <div
                 key={i}
-                className={`dc ${d.isToday ? "today" : ""} ${d.hasTasks ? "has-tasks" : ""}`}
-                onClick={() => onOpenDay(viewYear, viewMonth, d.day)}
+                className={`dc 
+    ${d.isToday ? "today" : ""} 
+    ${d.hasTasks ? "has-tasks" : ""} 
+    ${isPastDay(viewYear, viewMonth, d.day) ? "disabled" : ""}
+  `}
+                onClick={() => {
+                  if (!isPastDay(viewYear, viewMonth, d.day)) {
+                    onOpenDay(viewYear, viewMonth, d.day);
+                  }
+                }}
               >
                 <span className="dnum">{d.day}</span>
                 {d.hasTasks && <span className="edot"></span>}
