@@ -30,7 +30,8 @@ func SetupRouter() *gin.Engine {
 	authHandler := routes.NewAuthHandle(authService)
 
 	appointmentRepo := repository.NewAppointmentRepository(config.DB)
-	appointmentService := service.NewAppointmentService(appointmentRepo)
+	emailService := service.NewEmailService()
+	appointmentService := service.NewAppointmentService(appointmentRepo, emailService)
 	appointmentHandler := routes.NewAppointmentHandle(appointmentService)
 
 	jobs.Start(appointmentService)

@@ -13,10 +13,14 @@ import (
 
 type AppointmentService struct {
 	appointmentRepo *repository.AppointmentRepository
+	emailSvc        *EmailService
 }
 
-func NewAppointmentService(appointmentRepo *repository.AppointmentRepository) *AppointmentService {
-	return &AppointmentService{appointmentRepo: appointmentRepo}
+func NewAppointmentService(appointmentRepo *repository.AppointmentRepository, emailSvc *EmailService) *AppointmentService {
+	return &AppointmentService{
+		appointmentRepo: appointmentRepo,
+		emailSvc:        emailSvc,
+	}
 }
 
 func nullIfEmpty(s string) *string {
@@ -33,7 +37,7 @@ func cleanPtr(s *string) *string {
 	return s
 }
 
-func (s *AppointmentService) CreateAppointment(ctx context.Context, userID string, req dto.CreateAppointmentRequest) error {
+func (s *AppointmentService) CreateAppointment(ctx context.Context, userID, userName, userEmail string, req dto.CreateAppointmentRequest) error {
 	taskDate, err := time.Parse("2006-01-02", req.TaskDate)
 	if err != nil {
 		return err
@@ -66,7 +70,28 @@ func (s *AppointmentService) CreateAppointment(ctx context.Context, userID strin
 		AlertDates:  alertDates,
 	}
 
-	return s.appointmentRepo.CreateAppointment(ctx, newAppointment)
+	err = s.appointmentRepo.CreateAppointment(ctx, newAppointment)
+	if err != nil {
+		return err
+	}
+
+	alertInfo := model.AlertInfo{
+		TaskName:    req.Name,
+		Description: nullIfEmpty(req.Description),
+		TimeStart:   cleanPtr(req.TimeStart),
+		TaskDate:    taskDate,
+		UserEmail:   userEmail,
+		UserName:    userName,
+	}
+
+	go func() {
+		err := s.emailSvc.SendAppointmentAlert(userEmail, userName, alertInfo)
+		if err != nil {
+			fmt.Printf("ERRO ao enviar e-mail de novo compromisso para %s: %v\n", userEmail, err)
+		}
+	}()
+
+	return nil
 }
 
 func (s *AppointmentService) UpdateAppointment(ctx context.Context, id string, userID string, req dto.UpdateAppointmentRequest) error {
@@ -169,7 +194,6 @@ func (s *AppointmentService) ProcessDailyRoutines(ctx context.Context) error {
 		return err
 	}
 
-	emailSvc := NewEmailService()
 	userAlerts := make(map[string][]model.AlertInfo)
 	userNames := make(map[string]string)
 
@@ -190,7 +214,7 @@ func (s *AppointmentService) ProcessDailyRoutines(ctx context.Context) error {
 			}
 		}
 
-		err := emailSvc.SendDailySummaryAlert(
+		err := s.emailSvc.SendDailySummaryAlert(
 			email,
 			userNames[email],
 			todayTasks,

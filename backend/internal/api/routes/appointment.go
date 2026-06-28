@@ -33,7 +33,7 @@ func (s *AppointmentHandle) Create(c *gin.Context) {
 
 	user := userI.(*model.User)
 
-	err := s.serviceAppointment.CreateAppointment(c.Request.Context(), user.ID, body)
+	err := s.serviceAppointment.CreateAppointment(c.Request.Context(), user.ID, user.Name, user.Email, body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
